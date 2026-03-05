@@ -14,16 +14,16 @@
 //    limitations under the License.
 // </copyright>
 
+using System;
+using System.Collections;
+using System.IO;
+using System.Xml;
+using Google;
+using UnityEditor;
+using UnityEngine;
 
 namespace GooglePlayGames.Editor
 {
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Xml;
-    using UnityEditor;
-    using UnityEngine;
-
 #if UNITY_2021_2_OR_NEWER
     using UnityEditor.Build;
 #endif
@@ -64,7 +64,7 @@ namespace GooglePlayGames.Editor
         [MenuItem("Google/Play Games/Setup/Android setup...", false, 1)]
         public static void MenuItemFileGPGSAndroidSetup()
         {
-            var window = EditorWindow.GetWindow<GPGSAndroidSetupUI>(true, GPGSStrings.AndroidSetup.Title);
+            var window = GetWindow<GPGSAndroidSetupUI>(true, GPGSStrings.AndroidSetup.Title);
             window.minSize = new Vector2(500, 400);
         }
 
@@ -116,13 +116,13 @@ namespace GooglePlayGames.Editor
 
                 AssetDatabase.Refresh();
 
-                Google.VersionHandler.VerboseLoggingEnabled = true;
-                Google.VersionHandler.UpdateVersionedAssets(forceUpdate: true);
-                Google.VersionHandler.Enabled = true;
+                VersionHandler.VerboseLoggingEnabled = true;
+                VersionHandler.UpdateVersionedAssets(forceUpdate: true);
+                VersionHandler.Enabled = true;
                 AssetDatabase.Refresh();
 
-                Google.VersionHandler.InvokeStaticMethod(
-                    Google.VersionHandler.FindClass(
+                VersionHandler.InvokeStaticMethod(
+                    VersionHandler.FindClass(
                         "Google.JarResolver",
                         "GooglePlayServices.PlayServicesResolver"),
                     "MenuResolve", null);
@@ -450,6 +450,8 @@ namespace GooglePlayGames.Editor
             {
                 GPGSUtil.WriteResourceIds(classDirectory, className, resourceKeys);
             }
+
+            GPGSResourceHandler.instance.ResolveResourceIds(resourceKeys);
 
             return appId != null;
         }
