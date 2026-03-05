@@ -15,17 +15,17 @@
 // </copyright>
 // Keep this even on unsupported configurations.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Xml;
+using UnityEditor;
+using UnityEngine;
+
 namespace GooglePlayGames.Editor
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Xml;
-    using System.Linq;
-    using UnityEditor;
-    using UnityEngine;
-
     /// <summary>
     /// Utility class to perform various tasks in the editor.
     /// </summary>
@@ -115,23 +115,22 @@ namespace GooglePlayGames.Editor
                 if (string.IsNullOrEmpty(mRootPath) || !Directory.Exists(mRootPath))
                 {
 #if UNITY_2018_4_OR_NEWER
-                    mRootPath = Path.GetFullPath(Path.Combine("Packages",RootFolderName));
-                    if(Directory.Exists(mRootPath))
+                    mRootPath = Path.GetFullPath(Path.Combine("Packages", RootFolderName));
+                    if (Directory.Exists(mRootPath))
                         return mRootPath;
 #endif
 
-                    string[] dirs = new[] {
+                    string[] dirs = new[]
+                    {
 #if UNITY_2018_4_OR_NEWER
                         // search for remote UPM installation
-                        Path.Join("Library","PackageCache"),
+                        Path.Join("Library", "PackageCache"),
                         "Packages",
 #endif
                         "Assets"
-                    }.Distinct().SelectMany((path) => {
-                        return Directory.GetDirectories(path, RootFolderName + "*", SearchOption.AllDirectories);
-                    }).Distinct().ToArray();
+                    }.Distinct().SelectMany((path) => { return Directory.GetDirectories(path, RootFolderName + "*", SearchOption.AllDirectories); }).Distinct().ToArray();
 
-                    mRootPath = dirs.Select((dir) => SlashesToPlatformSeparator(dir)).FirstOrDefault((dir) => File.Exists(Path.Combine(dir,GameInfoRelativePath)));
+                    mRootPath = dirs.Select((dir) => SlashesToPlatformSeparator(dir)).FirstOrDefault((dir) => File.Exists(Path.Combine(dir, GameInfoRelativePath)));
 
                     if (string.IsNullOrEmpty(mRootPath))
                     {
@@ -174,14 +173,14 @@ namespace GooglePlayGames.Editor
             new Dictionary<string, string>()
             {
                 // Put this element placeholder first, since it has embedded placeholder
-                {SERVICEID_ELEMENT_PLACEHOLDER, SERVICEID_ELEMENT_PLACEHOLDER},
-                {SERVICEIDPLACEHOLDER, SERVICEIDKEY},
-                {APPIDPLACEHOLDER, APPIDKEY},
-                {CLASSNAMEPLACEHOLDER, CLASSNAMEKEY},
-                {WEBCLIENTIDPLACEHOLDER, WEBCLIENTIDKEY},
-                {PLUGINVERSIONPLACEHOLDER, PLUGINVERSIONKEY},
+                { SERVICEID_ELEMENT_PLACEHOLDER, SERVICEID_ELEMENT_PLACEHOLDER },
+                { SERVICEIDPLACEHOLDER, SERVICEIDKEY },
+                { APPIDPLACEHOLDER, APPIDKEY },
+                { CLASSNAMEPLACEHOLDER, CLASSNAMEKEY },
+                { WEBCLIENTIDPLACEHOLDER, WEBCLIENTIDKEY },
+                { PLUGINVERSIONPLACEHOLDER, PLUGINVERSIONKEY },
                 // Causes the placeholder to be replaced with overridden value at runtime.
-                {NEARBY_PERMISSIONS_PLACEHOLDER, NEARBY_PERMISSIONS_PLACEHOLDER}
+                { NEARBY_PERMISSIONS_PLACEHOLDER, NEARBY_PERMISSIONS_PLACEHOLDER }
             };
 
         /// <summary>
@@ -208,7 +207,7 @@ namespace GooglePlayGames.Editor
                 return null;
             }
 
-            using(var sr = new StreamReader(filePath))
+            using (var sr = new StreamReader(filePath))
                 return sr.ReadToEnd();
         }
 
@@ -219,7 +218,7 @@ namespace GooglePlayGames.Editor
         /// <param name="name">Name of the template in the editor directory.</param>
         public static string ReadEditorTemplate(string name)
         {
-            return ReadFile(Path.Combine(RootPath,"Editor",string.Format("{0}.txt", name)));
+            return ReadFile(Path.Combine(RootPath, "Editor", string.Format("{0}.txt", name)));
         }
 
         /// <summary>
@@ -494,27 +493,27 @@ namespace GooglePlayGames.Editor
         {
             string constantsValues = string.Empty;
             string[] parts = className.Split('.');
-            string dirName = string.Join("/",parts.Prepend(string.IsNullOrEmpty(classDirectory) ? "Assets" : classDirectory));
+            string dirName = string.Join("/", parts.Prepend(string.IsNullOrEmpty(classDirectory) ? "Assets" : classDirectory));
 
             string nameSpace = className;
 
-            EnsureDirExists(dirName);
+            EnsureDirExists(classDirectory);
             foreach (DictionaryEntry ent in resourceKeys)
             {
-                string key = MakeIdentifier((string) ent.Key);
+                string key = MakeIdentifier((string)ent.Key);
                 constantsValues += "        public const string " +
                                    key + " = \"" + ent.Value + "\"; // <GPGSID>\n";
             }
 
             string namespaceStart = string.IsNullOrEmpty(nameSpace) ? "namespace " + nameSpace + "\n{" : string.Empty;
-            string fileBody = GPGSUtil.ReadEditorTemplate("template-Constants").Replace(NAMESPACESTARTPLACEHOLDER,namespaceStart);
+            string fileBody = ReadEditorTemplate("template-Constants").Replace(NAMESPACESTARTPLACEHOLDER, namespaceStart);
 
             fileBody = fileBody.Replace(CLASSNAMEPLACEHOLDER, parts[parts.Length - 1]);
             fileBody = fileBody.Replace(CONSTANTSPLACEHOLDER, constantsValues);
 
-            fileBody = fileBody.Replace(NAMESPACEENDPLACEHOLDER,nameSpace != string.Empty ? "}" : string.Empty);
+            fileBody = fileBody.Replace(NAMESPACEENDPLACEHOLDER, string.Empty);
 
-            WriteFile(Path.Combine(dirName, parts[parts.Length - 1] + ".cs"), fileBody);
+            WriteFile(dirName + ".cs", fileBody);
         }
 
         /// <summary>
@@ -523,7 +522,7 @@ namespace GooglePlayGames.Editor
         /// </summary>
         public static void UpdateGameInfo()
         {
-            string fileBody = GPGSUtil.ReadEditorTemplate("template-GameInfo");
+            string fileBody = ReadEditorTemplate("template-GameInfo");
 
             foreach (KeyValuePair<string, string> ent in replacements)
             {
@@ -531,7 +530,7 @@ namespace GooglePlayGames.Editor
                 fileBody = fileBody.Replace(ent.Key, value);
             }
 
-            GPGSUtil.WriteFile(GameInfoPath, fileBody);
+            WriteFile(GameInfoPath, fileBody);
         }
 
         /// <summary>
@@ -584,7 +583,7 @@ namespace GooglePlayGames.Editor
                 if (inResource && reader.Name == "integer")
                 {
                     if ("google_play_services_version".Equals(
-                        reader.GetAttribute("name")))
+                            reader.GetAttribute("name")))
                     {
                         reader.Read();
                         Debug.Log("Read version string: " + reader.Value);
@@ -597,16 +596,16 @@ namespace GooglePlayGames.Editor
             return version;
         }
 
-
         const string androidNamespaceURL = "http://schemas.android.com/apk/res/android";
+
         public static void PatchAndroidManifest(string manifestPath = null)
         {
-            if(string.IsNullOrEmpty(manifestPath))
-                manifestPath = Path.Combine(Application.dataPath,"Plugins","Android","AndroidManifest.xml");
+            if (string.IsNullOrEmpty(manifestPath))
+                manifestPath = Path.Combine(Application.dataPath, "Plugins", "Android", "AndroidManifest.xml");
 
-            if(!File.Exists(manifestPath))
+            if (!File.Exists(manifestPath))
             {
-                EditorUtility.DisplayDialog("Google Play Games Error","Cannot find AndroidManifest.xml to modified","OK");
+                EditorUtility.DisplayDialog("Google Play Games Error", "Cannot find AndroidManifest.xml to modified", "OK");
                 return;
             }
 
@@ -614,95 +613,95 @@ namespace GooglePlayGames.Editor
             xmlDoc.Load(manifestPath);
 
             bool changed = false;
-            xmlDoc.NodeChanged += (sender,xncea) => changed = true;
-            xmlDoc.NodeRemoved += (sender,xncea) => changed = true;
-            xmlDoc.NodeInserted += (sender,xncea) => changed = true;
+            xmlDoc.NodeChanged += (sender, xncea) => changed = true;
+            xmlDoc.NodeRemoved += (sender, xncea) => changed = true;
+            xmlDoc.NodeInserted += (sender, xncea) => changed = true;
 
             var nsmgr = new XmlNamespaceManager(xmlDoc.NameTable);
-            nsmgr.AddNamespace("android",androidNamespaceURL);
+            nsmgr.AddNamespace("android", androidNamespaceURL);
 
-            SetAndroidAttributeOrRemoveIfNoValue(xmlDoc,nsmgr,"com.google.android.gms.games.unityVersion",PluginVersion.VersionString,true);
+            SetAndroidAttributeOrRemoveIfNoValue(xmlDoc, nsmgr, "com.google.android.gms.games.unityVersion", PluginVersion.VersionString, true);
 
-            SetAndroidAttributeOrRemoveIfNoValue(xmlDoc,nsmgr,"com.google.android.gms.games.APP_ID",GPGSProjectSettings.Instance.Get(GPGSUtil.APPIDKEY),true);
+            SetAndroidAttributeOrRemoveIfNoValue(xmlDoc, nsmgr, "com.google.android.gms.games.APP_ID", GPGSProjectSettings.Instance.Get(APPIDKEY), true);
 
-            SetAndroidAttributeOrRemoveIfNoValue(xmlDoc,nsmgr,"com.google.android.gms.games.WEB_CLIENT_ID",GPGSProjectSettings.Instance.Get(GPGSUtil.WEBCLIENTIDKEY),false);
+            SetAndroidAttributeOrRemoveIfNoValue(xmlDoc, nsmgr, "com.google.android.gms.games.WEB_CLIENT_ID", GPGSProjectSettings.Instance.Get(WEBCLIENTIDKEY), false);
 
             Debug.Log("TestInit");
 
-            if(SetAndroidAttributeOrRemoveIfNoValue(xmlDoc,nsmgr,"com.google.android.gms.nearby.connection.SERVICE_ID",GPGSProjectSettings.Instance.Get(GPGSUtil.SERVICEIDKEY),false))
+            if (SetAndroidAttributeOrRemoveIfNoValue(xmlDoc, nsmgr, "com.google.android.gms.nearby.connection.SERVICE_ID", GPGSProjectSettings.Instance.Get(SERVICEIDKEY), false))
             {
-                foreach(var permission in new[]{ "BLUETOOTH","BLUETOOTH_ADMIN","ACCESS_WIFI_STATE","CHANGE_WIFI_STATE","ACCESS_COARSE_LOCATION" })
-                    xmlDoc.FindOrCreate(nsmgr,androidNamespaceURL,"manifest/uses-permission","android:name","android.permission." + permission);
+                foreach (var permission in new[] { "BLUETOOTH", "BLUETOOTH_ADMIN", "ACCESS_WIFI_STATE", "CHANGE_WIFI_STATE", "ACCESS_COARSE_LOCATION" })
+                    xmlDoc.FindOrCreate(nsmgr, androidNamespaceURL, "manifest/uses-permission", "android:name", "android.permission." + permission);
             }
 
-            if(changed)
+            if (changed)
                 xmlDoc.Save(manifestPath);
         }
 
         /** <returns>value is set</returns> */
-        static bool SetAndroidAttributeOrRemoveIfNoValue(XmlDocument xmlDoc,XmlNamespaceManager nsmgr,string key,string value,bool shouldPrependU003)
+        static bool SetAndroidAttributeOrRemoveIfNoValue(XmlDocument xmlDoc, XmlNamespaceManager nsmgr, string key, string value, bool shouldPrependU003)
         {
-            if(!string.IsNullOrEmpty(value))
+            if (!string.IsNullOrEmpty(value))
             {
-                var element = xmlDoc.FindOrCreate(nsmgr,androidNamespaceURL,"manifest/application/meta-data","android:name",key);
-                element.SetAttributeNS(androidNamespaceURL,"android:value",shouldPrependU003 ? ("\\u003" + value) : value);
+                var element = xmlDoc.FindOrCreate(nsmgr, androidNamespaceURL, "manifest/application/meta-data", "android:name", key);
+                element.SetAttributeNS(androidNamespaceURL, "android:value", shouldPrependU003 ? ("\\u003" + value) : value);
                 return true;
             }
 
-            foreach(var node in xmlDoc.SelectNodesWithAttribute("manifest/application/meta-data","android:name",key,nsmgr).OfType<XmlNode>())
+            foreach (var node in xmlDoc.SelectNodesWithAttribute("manifest/application/meta-data", "android:name", key, nsmgr).OfType<XmlNode>())
                 node.ParentNode.RemoveChild(node);
 
             return false;
         }
 
-        public static void SetAttributeNS(this XmlElement element,string namespaceURL,string attributeName,string attributeValue)
+        public static void SetAttributeNS(this XmlElement element, string namespaceURL, string attributeName, string attributeValue)
         {
             var attr = element?.Attributes?.OfType<XmlAttribute>().FirstOrDefault((item) => item.Name == attributeName);
-            if(attr == null)
-                attr = element.SetAttributeNode(element.OwnerDocument.CreateAttribute(attributeName,namespaceURL));
+            if (attr == null)
+                attr = element.SetAttributeNode(element.OwnerDocument.CreateAttribute(attributeName, namespaceURL));
 
-            if(attr.Value != attributeValue)
+            if (attr.Value != attributeValue)
                 attr.Value = attributeValue;
         }
 
-        public static XmlElement FindOrCreate(this XmlDocument xmlDoc,XmlNamespaceManager nsmgr,string attributeNamespace,string path,string attributeName,string attributeValue)
+        public static XmlElement FindOrCreate(this XmlDocument xmlDoc, XmlNamespaceManager nsmgr, string attributeNamespace, string path, string attributeName, string attributeValue)
         {
-            var nodes = xmlDoc.SelectNodesWithAttribute(path,attributeName,attributeValue,nsmgr);
-            if(nodes.Count > 0)
+            var nodes = xmlDoc.SelectNodesWithAttribute(path, attributeName, attributeValue, nsmgr);
+            if (nodes.Count > 0)
             {
                 var result = nodes.OfType<XmlElement>().FirstOrDefault();
 
-                foreach(var node in nodes.OfType<XmlNode>().Where((item) => item != result))
+                foreach (var node in nodes.OfType<XmlNode>().Where((item) => item != result))
                     node.ParentNode.RemoveChild(node);
 
-                if(result != null)
+                if (result != null)
                     return result;
             }
 
             var element = xmlDoc.DocumentElement;
             var stack = new Stack<string>();
-            while(path.LastIndexOf('/') is int i && i > 0)
+            while (path.LastIndexOf('/') is int i && i > 0)
             {
                 stack.Push(path.Substring(i + 1));
                 path = path.Remove(i);
-                element = xmlDoc.SelectNodes(path,nsmgr)?.OfType<XmlElement>().FirstOrDefault();
-                if(element != null)
+                element = xmlDoc.SelectNodes(path, nsmgr)?.OfType<XmlElement>().FirstOrDefault();
+                if (element != null)
                     break;
             }
 
-            while(stack.TryPop(out string name))
+            while (stack.TryPop(out string name))
             {
                 element = element.AppendChild(xmlDoc.CreateElement(name)) as XmlElement;
             }
 
-            element.SetAttributeNS(attributeNamespace,attributeName,attributeValue);
+            element.SetAttributeNS(attributeNamespace, attributeName, attributeValue);
 
             return element;
         }
 
-        public static XmlNodeList SelectNodesWithAttribute(this XmlDocument xmlDoc,string path,string attributeName,string attributeValue,XmlNamespaceManager nsmgr)
+        public static XmlNodeList SelectNodesWithAttribute(this XmlDocument xmlDoc, string path, string attributeName, string attributeValue, XmlNamespaceManager nsmgr)
         {
-            return xmlDoc.SelectNodes($"{path}[@{attributeName}='{attributeValue}']",nsmgr);
+            return xmlDoc.SelectNodes($"{path}[@{attributeName}='{attributeValue}']", nsmgr);
         }
     }
 }
